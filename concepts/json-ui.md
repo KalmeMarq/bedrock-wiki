@@ -210,7 +210,7 @@ Also you can use a string variable after `@`, its value will be interpreted as a
 }
 ```
 
-`Wait` animation example. It's used when you want no animation between two other animtions.
+`Wait` animation example. It's used when you want no animation between two other animations.
 {% include filepath.html path="RP/ui/example_file.json"%}
 ```jsonc
 {
@@ -315,6 +315,57 @@ Instead of saying `"offset": "@..."`, `"size": "@..."`, `"alpha": "@..."`, etc, 
 | Logical OR             | or         | `($is_cool or $is_awesome)`                                                       |
 | Logical NOT            | not        | `(not #name)` `(not #name = 'text')`                                              |
 
+## Variables
+You have a template element with a variable and an element that derives from it and it modifies the variable value. But then the panel where the new element is in tries to change the value of the variable again. You probably thought it would work but it doesn't. The variables has already been updated so you can't override in a parent.
+```jsonc
+{
+  "element_tplt": {
+    ...
+    "size": "$el_size",
+    "$el_size": [98, 20]
+  },
+  
+  "new_el@element_tplt": {
+    "$el_size": [72, 20] 
+  },
+  
+  "panel": {
+    ...
+    "$el_alpha": 0.1,
+    "controls": [
+      {
+        "el@new_el": {}
+      }
+    ]
+  }
+}
+```
+
+To fix that you add `|default` at the end of the variable name when it's created. This will allow you to change the variable value in whatever parent the element is in.
+```jsonc
+{
+  "element_tplt": {
+    ...
+    "alpha": "$el_alpha",
+    "$el_alpha|default": 0.8
+  },
+  
+  "new_el@element_tplt": {
+    "$el_size": 0.6
+  },
+  
+  "panel": {
+    ...
+    "$el_alpha": 0.1, // Updates `$el_alpha` to 0.1 for all its children that have this variable
+    "controls": [
+      {
+        "el@new_el": {}
+      }
+    ]
+  }
+}
+```
+
 ## Bindings
 `bindings` is used to bind a hardcoded value to the element and use it for conditions, for example.
 
@@ -403,4 +454,93 @@ We have to tell what's the source element where the value will come from, tell w
 When the toggle is checked the `#toggle_state` will be checked (`1` or `true`) and it will override the `visible` property value of the element to true. When you uncheck it will be unchecked (`0` or `false`) and once again override the `visible` value.
 
 ## Button Mappings
-## Modify Vanilla
+## Modify/Overwrite Vanilla
+You don't need to copy a vanilla file content entirely. Like said before, you will only overwrite not replace.
+
+Let's say you this element in a vanilla file:
+```jsonc
+{
+  "info_label": {
+    "type": "label",
+    "text": "Some info",
+    "color": "black",
+    "layer": 2
+  }
+}
+```
+
+If you just want to modify the color, for example, you only have to reference that property.
+```jsonc
+{
+  "info_label": {
+    "color": "red"
+  }
+}
+```
+
+What if you want to modify a child of an element? This is how you should do it:
+```jsonc
+{
+  "panel": {
+    ...
+    "controls": [
+      {
+        "label_el": {
+          "type": "label",
+          "text": "Some info",
+          "color": "black",
+          "layer": 2
+        }
+      }
+    ]
+  }
+}
+```
+
+After the name of the parent element add `/` and then the child name.
+```jsonc
+{
+  "panel/label_el": {
+    "text": "Easy"
+  }
+}
+```
+
+## Others
+Use `grid_position` property to select a grid item.
+```jsonc
+{
+  "grid": {
+    "type": "grid",
+    "grid_dimensions": [2, 3],
+    ...
+    "controls": [
+      {
+        "grid_item": {
+          ...
+          "grid_position": [0, 1]
+        }
+      }
+    ]
+  }
+}
+```
+
+Use `collection_index` to select a collection item.
+```jsonc
+{
+  "collection": {
+    "type": "stack_panel",
+    "collection_name": "namehere",
+    ...
+    "controls": [
+      {
+        "collection_item": {
+          ...
+          "collection_index": 0
+        }
+      }
+    ]
+  }
+}
+```
